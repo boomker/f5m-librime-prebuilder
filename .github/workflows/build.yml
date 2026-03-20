@@ -19,8 +19,8 @@ jobs:
         shell: bash
         run: |
           set -x
-          # 1️⃣ 获取 librime-macos-prebuilder latest release body
-          latest_body=$(curl -s https://api.github.com/repos/MokOopsing/librime-macos-prebuilder/releases/latest | jq -r '.body')
+          # 1️⃣ 获取 f5m-librime-prebuilder latest release body
+          latest_body=$(curl -s https://api.github.com/repos/boomker/f5m-librime-prebuilder/releases/latest | jq -r '.body')
 
           # 如果没有 Release
           if [ "$latest_body" = "null" ]; then
@@ -35,7 +35,7 @@ jobs:
             latest_commit="none"
           fi
           
-          latest_librime_commit=$(curl -s https://api.github.com/repos/rime/librime/commits/master | jq -r '.sha')
+          latest_librime_commit=$(curl -s https://api.github.com/repos/boomker/librime/commits/master | jq -r '.sha')
           
           echo "Latest release commit: $latest_commit"
           echo "Latest librime commit: $latest_librime_commit"
@@ -88,9 +88,22 @@ jobs:
       - name: Update specific submodules to latest commit
         working-directory: fcitx5-prebuilder
         run: |
+          git -C librime remote set-url origin https://github.com/boomker/librime.git
           git -C librime fetch origin master && git -C librime reset --hard origin/master
           git -C librime-lua fetch origin master && git -C librime-lua reset --hard origin/master
           git -C librime-octagram fetch origin master && git -C librime-octagram reset --hard origin/master
+
+      - name: Install custom librime-predict plugin
+        working-directory: fcitx5-prebuilder/librime
+        run: |
+          if [ -d plugins/predict/.git ]; then
+            git -C plugins/predict remote set-url origin https://github.com/boomker/librime-predict-leveldb.git
+            git -C plugins/predict fetch origin main
+            git -C plugins/predict reset --hard origin/main
+          else
+            git clone --depth 1 https://github.com/boomker/librime-predict-leveldb.git plugins/predict
+          fi
+          git -C plugins/predict submodule update --init --recursive --depth 1
 
       # 2️⃣ 获取当前最新commit id
       - name: Get fcitx5-prebuilder commit id
@@ -207,7 +220,7 @@ jobs:
           name: "macOS RIME Build"
           body: |
             This artifact was automatically built by GitHub Actions
-            from commit ${{ steps.get-commit.outputs.commit_id }} of [rime/librime](https://github.com/rime/librime).
+            from commit ${{ steps.get-commit.outputs.commit_id }} of [boomker/librime](https://github.com/boomker/librime).
 
           files: |
             fcitx5-prebuilder/build/macos-arm64/librime-arm64.tar.bz2
