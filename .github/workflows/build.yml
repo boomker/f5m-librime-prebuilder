@@ -52,7 +52,7 @@ jobs:
     if: needs.check-latest-commit.outputs.skip_build != 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Delete all .so assets in 'latest' release
+      - name: Delete prebuilt tar assets in 'latest' release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -67,7 +67,7 @@ jobs:
           fi
 
           curl -s -H "Authorization: token $GITHUB_TOKEN" "$api/releases/$release_id/assets" \
-          | jq -r '.[] | select(.name | startswith("librime") and endswith(".tar.bz2")) | .id' \
+          | jq -r '.[] | select(((.name | startswith("librime")) or (.name | startswith("lua"))) and (.name | endswith(".tar.bz2"))) | .id' \
           | xargs -r -I{} curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" "$api/releases/assets/{}"
 
   build:
@@ -224,5 +224,6 @@ jobs:
 
           files: |
             fcitx5-prebuilder/build/macos-arm64/librime-arm64.tar.bz2
+            fcitx5-prebuilder/build/macos-arm64/lua-arm64.tar.bz2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
